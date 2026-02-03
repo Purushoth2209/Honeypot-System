@@ -1,0 +1,69 @@
+{
+  "rules": [
+    {
+      "id": "sql_injection",
+      "name": "SQL Injection Detection",
+      "type": "SQL_INJECTION",
+      "severity": "high",
+      "conditions": {
+        "attackTypes": ["SQL_INJECTION"],
+        "minOccurrences": 1
+      }
+    },
+    {
+      "id": "brute_force_admin",
+      "name": "Admin Brute Force Detection",
+      "type": "BRUTE_FORCE",
+      "severity": "critical",
+      "conditions": {
+        "attackTypes": ["AUTH_ATTEMPT"],
+        "endpoint": "/admin/login",
+        "minOccurrences": 3,
+        "timeWindowMinutes": 5
+      }
+    },
+    {
+      "id": "brute_force_ssh",
+      "name": "SSH Brute Force Detection",
+      "type": "BRUTE_FORCE",
+      "severity": "critical",
+      "conditions": {
+        "attackTypes": ["SSH_BRUTE_FORCE", "SSH_AUTH_ATTEMPT"],
+        "endpoint": "/ssh/login",
+        "minOccurrences": 3,
+        "timeWindowMinutes": 5
+      }
+    },
+    {
+      "id": "port_scanning",
+      "name": "Port/Endpoint Scanning Detection",
+      "type": "SCANNING",
+      "severity": "medium",
+      "conditions": {
+        "uniqueEndpoints": 3,
+        "timeWindowMinutes": 2
+      }
+    },
+    {
+      "id": "xss_attack",
+      "name": "Cross-Site Scripting Detection",
+      "type": "XSS",
+      "severity": "high",
+      "conditions": {
+        "attackTypes": ["XSS"],
+        "minOccurrences": 1
+      }
+    },
+    {
+      "id": "automated_bot",
+      "name": "Automated Bot Detection",
+      "type": "BOT",
+      "severity": "medium",
+      "conditions": {
+        "minRequests": 10,
+        "timeWindowMinutes": 1,
+        "userAgentPatterns": ["bot", "crawler", "python-requests", "curl"]
+      }
+    }
+  ]
+}
