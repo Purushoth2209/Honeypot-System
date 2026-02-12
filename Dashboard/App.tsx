@@ -4,9 +4,12 @@ import {
   Detection, LogsResponse, TimelineData 
 } from './types';
 import { apiService } from './services/apiService';
+import { websocketService } from './services/websocketService';
 import { PDFReportService } from './services/pdfReportService';
 import Sidebar from './components/Sidebar';
 import StatCard from './components/StatCard';
+import LiveAttackFeed from './components/LiveAttackFeed';
+import CriticalAlertBanner from './components/CriticalAlertBanner';
 import { Icons, SEVERITY_COLORS, SEVERITY_HEX } from './constants';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -26,6 +29,18 @@ const App: React.FC = () => {
   const [timeline, setTimeline] = useState<TimelineData[]>([]);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  
+  // Real-time state
+  const [liveAttacks, setLiveAttacks] = useState<any[]>([]);
+  const [criticalAlert, setCriticalAlert] = useState<any>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  
+  // Alert sound state
+  const [alertSoundEnabled, setAlertSoundEnabled] = useState(() => {
+    return localStorage.getItem('alertSoundEnabled') !== 'false';
+  });
+  const [lastAlertTime, setLastAlertTime] = useState(0);
+  const alertAudioRef = React.useRef<HTMLAudioElement | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -52,9 +67,97 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Preload alert sound
+    alertAudioRef.current = new Audio('/sounds/soc-alert.wav');
+    alertAudioRef.current.volume = 0.4;
+    alertAudioRef.current.load();
+    
     fetchData();
+    initializeWebSocket();
+    
+    return () => {
+      websocketService.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const playAlertSound = () => {
+    if (!alertSoundEnabled) return;
+    
+    const now = Date.now();
+    if (now - lastAlertTime < 3000) return; // 3 second cooldown
+    
+    setLastAlertTime(now);
+    
+    if (alertAudioRef.current) {
+      alertAudioRef.current.currentTime = 0;
+      alertAudioRef.current.play().catch(e => {
+        console.log('Alert sound play failed (user interaction may be required):', e);
+      });
+    }
+  };
+
+  const toggleAlertSound = () => {
+    const newValue = !alertSoundEnabled;
+    setAlertSoundEnabled(newValue);
+    localStorage.setItem('alertSoundEnabled', String(newValue));
+  };
+
+  const initializeWebSocket = async () => {
+    try {
+      await websocketService.connect();
+      setIsConnected(true);
+      
+      // Set up event listeners
+      websocketService.on('new_log', (data) => {
+        const logEntry = data.data;
+        if (logEntry.attackType !== 'NONE') {
+          const newAttack = {
+            id: `${logEntry.ip}-${Date.now()}`,
+            timestamp: logEntry.timestamp,
+            ip: logEntry.ip,
+            attackType: logEntry.attackType,
+            endpoint: logEntry.endpoint,
+            severity: logEntry.severity || 'medium'
+          };
+          
+          setLiveAttacks(prev => [newAttack, ...prev.slice(0, 19)]);
+        }
+      });
+      
+      websocketService.on('new_detection', (data) => {
+        const detection = data.data;
+        setDetections(prev => [detection, ...prev]);
+      });
+      
+      websocketService.on('critical_alert', (data) => {
+        const alert = {
+          id: `alert-${Date.now()}`,
+          ...data.data
+        };
+        setCriticalAlert(alert);
+        playAlertSound();
+      });
+      
+      websocketService.on('stats_update', (data) => {
+        const stats = data.data;
+        setSummary(prev => prev ? {
+          ...prev,
+          totalLogs: stats.totalLogs,
+          totalAttacks: stats.totalAttacks,
+          uniqueAttackers: stats.uniqueAttackers,
+          severityBreakdown: {
+            ...prev.severityBreakdown,
+            critical: stats.criticalAlerts
+          }
+        } : null);
+      });
+      
+    } catch (error) {
+      console.error('Failed to connect to WebSocket:', error);
+      setIsConnected(false);
+    }
+  };
 
   const runAiLandscapeAnalysis = async () => {
     if (!summary || attackers.length === 0) return;
@@ -95,9 +198,41 @@ const App: React.FC = () => {
         <div className="flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Security Overview</h1>
-            <p className="text-slate-400">Real-time threat detection and analytics for your infrastructure.</p>
+            <div className="flex items-center gap-3">
+              <p className="text-slate-400">Real-time threat detection and analytics for your infrastructure.</p>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <span className={`text-xs font-medium ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {isConnected ? 'Live' : 'Offline'}
+                </span>
+              </div>
+            </div>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={toggleAlertSound}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+                alertSoundEnabled
+                  ? 'bg-green-900/30 border-green-700 text-green-400 hover:bg-green-900/50'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+              }`}
+              title={alertSoundEnabled ? 'Alert sound enabled' : 'Alert sound disabled'}
+            >
+              {alertSoundEnabled ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <line x1="22" y1="9" x2="16" y2="15"/>
+                  <line x1="16" y1="9" x2="22" y2="15"/>
+                </svg>
+              )}
+              <span className="text-xs font-medium">{alertSoundEnabled ? 'ON' : 'OFF'}</span>
+            </button>
             <button 
               onClick={downloadPDFReport}
               className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors font-medium shadow-lg shadow-rose-500/20"
@@ -125,8 +260,13 @@ const App: React.FC = () => {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Live Attack Feed */}
+          <div className="lg:col-span-1">
+            <LiveAttackFeed attacks={liveAttacks} />
+          </div>
+          
           {/* Timeline Chart */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+          <div className="lg:col-span-1 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
             <h3 className="text-lg font-semibold text-white mb-6">Attack Timeline</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -488,14 +628,21 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen bg-slate-950">
-        <div className="max-w-7xl mx-auto pb-20">
-          {renderContent()}
-        </div>
-      </main>
-    </div>
+    <>
+      <div className="flex min-h-screen">
+        <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+        <main className="flex-1 p-8 overflow-y-auto max-h-screen bg-slate-950">
+          <div className="max-w-7xl mx-auto pb-20">
+            {renderContent()}
+          </div>
+        </main>
+      </div>
+      
+      <CriticalAlertBanner 
+        alert={criticalAlert} 
+        onDismiss={() => setCriticalAlert(null)} 
+      />
+    </>
   );
 };
 

@@ -1,11 +1,22 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const config = require('./config');
 const analyticsRoutes = require('./routes/analytics');
 const requestLogger = require('./middleware/requestLogger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const websocketService = require('./services/websocketService');
+const realTimeProcessor = require('./services/realTimeProcessor');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Middleware
 app.use(cors());
@@ -41,9 +52,29 @@ app.get('/', (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log(`[WEBSOCKET] Client connected: ${socket.id}`);
+  
+  socket.on('disconnect', () => {
+    console.log(`[WEBSOCKET] Client disconnected: ${socket.id}`);
+  });
+});
+
+// Initialize WebSocket service
+websocketService.initialize(io);
+
+// Make websocket service available globally
+global.websocketService = websocketService;
+
+// Start real-time log processing
+realTimeProcessor.start();
+
 // Start server
-app.listen(config.server.port, () => {
+server.listen(config.server.port, () => {
   console.log(`[ANALYZER API] Server running on port ${config.server.port}`);
   console.log(`[ANALYZER API] Environment: ${config.server.env}`);
   console.log(`[ANALYZER API] Endpoints: http://localhost:${config.server.port}/api/analytics`);
+  console.log(`[WEBSOCKET] Socket.IO server ready`);
+  console.log(`[REALTIME] Log monitoring active`);
 });

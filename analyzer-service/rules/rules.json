@@ -4,9 +4,29 @@
       "id": "sql_injection",
       "name": "SQL Injection Detection",
       "type": "SQL_INJECTION",
-      "severity": "high",
+      "severity": "critical",
       "conditions": {
         "attackTypes": ["SQL_INJECTION"],
+        "minOccurrences": 1
+      }
+    },
+    {
+      "id": "command_injection",
+      "name": "Command Injection Detection",
+      "type": "COMMAND_INJECTION",
+      "severity": "critical",
+      "conditions": {
+        "attackTypes": ["COMMAND_INJECTION"],
+        "minOccurrences": 1
+      }
+    },
+    {
+      "id": "path_traversal",
+      "name": "Path Traversal Detection",
+      "type": "PATH_TRAVERSAL",
+      "severity": "critical",
+      "conditions": {
+        "attackTypes": ["PATH_TRAVERSAL"],
         "minOccurrences": 1
       }
     },
