@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { logInteraction } = require('../logger/logger');
 const { detectAttackType } = require('../utils/attackPatterns');
+const { extractClientIP } = require('../utils/ipExtractor');
 
 /**
  * Fake SQL-vulnerable search endpoint
@@ -9,7 +10,7 @@ const { detectAttackType } = require('../utils/attackPatterns');
  */
 router.get('/', (req, res) => {
   const query = req.query.q;
-  const ip = req.ip || req.connection.remoteAddress;
+  const ip = extractClientIP(req);
   const userAgent = req.get('user-agent');
   
   // Detect attack type

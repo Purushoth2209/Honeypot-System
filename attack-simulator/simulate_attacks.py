@@ -7,9 +7,28 @@ Simulates various attack patterns against the honeypot system
 import requests
 import time
 import json
+import random
 from datetime import datetime
 
 HONEYPOT_URL = "http://localhost:3001"
+
+# Fake public IPs from different countries for geo-simulation
+FAKE_PUBLIC_IPS = [
+    "8.8.8.8",           # USA (Google DNS)
+    "1.1.1.1",           # Australia (Cloudflare)
+    "103.21.244.0",      # India
+    "185.199.108.153",   # Germany (GitHub)
+    "41.77.188.1",       # South Africa
+    "200.221.11.100",    # Brazil
+    "202.12.27.33",      # Thailand
+    "195.154.122.0",     # France
+    "80.82.77.139",      # UK
+    "61.135.169.125",    # China
+]
+
+def get_random_ip():
+    """Get a random fake public IP for simulation"""
+    return random.choice(FAKE_PUBLIC_IPS)
 
 def print_banner():
     print("=" * 60)
@@ -31,8 +50,13 @@ def test_sql_injection():
     
     for payload in sql_payloads:
         try:
-            response = requests.get(f"{HONEYPOT_URL}/search", params={"q": payload})
-            print(f"  ✓ SQL Injection: {payload[:30]}... [{response.status_code}]")
+            fake_ip = get_random_ip()
+            response = requests.get(
+                f"{HONEYPOT_URL}/search",
+                params={"q": payload},
+                headers={"X-Forwarded-For": fake_ip}
+            )
+            print(f"  ✓ SQL Injection: {payload[:30]}... [{response.status_code}] from {fake_ip}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  ✗ Error: {e}")
@@ -51,12 +75,16 @@ def test_admin_login():
     
     for cred in credentials:
         try:
+            fake_ip = get_random_ip()
             response = requests.post(
                 f"{HONEYPOT_URL}/admin/login",
                 json=cred,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Forwarded-For": fake_ip
+                }
             )
-            print(f"  ✓ Login attempt: {cred['username']}/{cred['password']} [{response.status_code}]")
+            print(f"  ✓ Login attempt: {cred['username']}/{cred['password']} [{response.status_code}] from {fake_ip}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  ✗ Error: {e}")
@@ -75,12 +103,16 @@ def test_ssh_brute_force():
     
     for attempt in ssh_attempts:
         try:
+            fake_ip = get_random_ip()
             response = requests.post(
                 f"{HONEYPOT_URL}/ssh/login",
                 json=attempt,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Forwarded-For": fake_ip
+                }
             )
-            print(f"  ✓ SSH attempt: {attempt['username']}/{attempt['password']} [{response.status_code}]")
+            print(f"  ✓ SSH attempt: {attempt['username']}/{attempt['password']} [{response.status_code}] from {fake_ip}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  ✗ Error: {e}")
@@ -97,8 +129,13 @@ def test_xss_attacks():
     
     for payload in xss_payloads:
         try:
-            response = requests.get(f"{HONEYPOT_URL}/search", params={"q": payload})
-            print(f"  ✓ XSS: {payload[:30]}... [{response.status_code}]")
+            fake_ip = get_random_ip()
+            response = requests.get(
+                f"{HONEYPOT_URL}/search",
+                params={"q": payload},
+                headers={"X-Forwarded-For": fake_ip}
+            )
+            print(f"  ✓ XSS: {payload[:30]}... [{response.status_code}] from {fake_ip}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  ✗ Error: {e}")
@@ -117,12 +154,16 @@ def test_command_injection():
     
     for payload in cmd_payloads:
         try:
+            fake_ip = get_random_ip()
             response = requests.post(
                 f"{HONEYPOT_URL}/api/exec",
                 json=payload,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Forwarded-For": fake_ip
+                }
             )
-            print(f"  ✓ Command Injection: {payload['cmd'][:30]}... [{response.status_code}]")
+            print(f"  ✓ Command Injection: {payload['cmd'][:30]}... [{response.status_code}] from {fake_ip}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  ✗ Error: {e}")
@@ -141,8 +182,12 @@ def test_path_traversal():
     
     for path in paths:
         try:
-            response = requests.get(f"{HONEYPOT_URL}{path}")
-            print(f"  ✓ Path Traversal: {path[:40]}... [{response.status_code}]")
+            fake_ip = get_random_ip()
+            response = requests.get(
+                f"{HONEYPOT_URL}{path}",
+                headers={"X-Forwarded-For": fake_ip}
+            )
+            print(f"  ✓ Path Traversal: {path[:40]}... [{response.status_code}] from {fake_ip}")
             time.sleep(0.5)
         except Exception as e:
             print(f"  ✗ Error: {e}")

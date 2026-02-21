@@ -10,7 +10,7 @@ import Sidebar from './components/Sidebar';
 import StatCard from './components/StatCard';
 import LiveAttackFeed from './components/LiveAttackFeed';
 import CriticalAlertBanner from './components/CriticalAlertBanner';
-import WorkingGeoThreatView from './components/WorkingGeoThreatView';
+import GeoMap from './components/GeoMap';
 import { Icons, SEVERITY_COLORS, SEVERITY_HEX } from './constants';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -623,7 +623,7 @@ const App: React.FC = () => {
       case ViewMode.LOGS: return renderLogs();
       case ViewMode.ATTACKERS: return renderAttackers();
       case ViewMode.DETECTIONS: return renderDetections();
-      case ViewMode.GEO_THREAT: return <WorkingGeoThreatView />;
+      case ViewMode.GEO_THREAT: return <GeoMap />;
       case ViewMode.AI_ANALYST: return renderAiAnalyst();
       default: return renderDashboard();
     }
