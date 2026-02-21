@@ -151,6 +151,52 @@ class AnalyticsService {
       detailedDetections: detections
     };
   }
+
+  /**
+   * Get country-wise attack count
+   */
+  getCountries() {
+    const { logs } = this.analyze();
+    
+    const countryStats = logs.reduce((acc, log) => {
+      const country = log.geo?.country || 'Unknown';
+      acc[country] = (acc[country] || 0) + 1;
+      return acc;
+    }, {});
+    
+    return Object.entries(countryStats)
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Get geo map data with coordinates
+   */
+  getGeoMap() {
+    const { logs } = this.analyze();
+    
+    const geoStats = logs.reduce((acc, log) => {
+      const geo = log.geo;
+      if (geo && geo.country !== 'Unknown' && geo.country !== 'Local') {
+        const key = `${geo.country}-${geo.city || 'Unknown'}`;
+        if (!acc[key]) {
+          acc[key] = {
+            country: geo.country,
+            city: geo.city || 'Unknown',
+            latitude: geo.latitude,
+            longitude: geo.longitude,
+            count: 0
+          };
+        }
+        acc[key].count++;
+      }
+      return acc;
+    }, {});
+    
+    return Object.values(geoStats)
+      .filter(item => item.latitude && item.longitude)
+      .sort((a, b) => b.count - a.count);
+  }
 }
 
 module.exports = new AnalyticsService();

@@ -117,6 +117,36 @@ class AnalyticsController {
       });
     }
   }
+
+  /**
+   * GET /api/analytics/countries
+   */
+  async getCountries(req, res) {
+    try {
+      const data = analyticsService.getCountries();
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  }
+
+  /**
+   * GET /api/analytics/geo-map
+   */
+  async getGeoMap(req, res) {
+    try {
+      const data = analyticsService.getGeoMap();
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  }
 }
 
 module.exports = new AnalyticsController();

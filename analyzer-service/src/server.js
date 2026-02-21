@@ -8,6 +8,7 @@ const requestLogger = require('./middleware/requestLogger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const websocketService = require('./services/websocketService');
 const realTimeProcessor = require('./services/realTimeProcessor');
+const geoIpService = require('./services/geoIpService');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,7 +44,9 @@ app.get('/', (req, res) => {
       'GET /api/analytics/detections',
       'GET /api/analytics/logs',
       'GET /api/analytics/timeline',
-      'GET /api/analytics/report'
+      'GET /api/analytics/report',
+      'GET /api/analytics/countries',
+      'GET /api/analytics/geo-map'
     ]
   });
 });
@@ -71,7 +74,14 @@ global.websocketService = websocketService;
 realTimeProcessor.start();
 
 // Start server
-server.listen(config.server.port, () => {
+server.listen(config.server.port, async () => {
+  // Initialize GeoIP service
+  try {
+    await geoIpService.init();
+  } catch (error) {
+    console.warn('[GEOIP] Failed to initialize GeoIP service:', error.message);
+  }
+  
   console.log(`[ANALYZER API] Server running on port ${config.server.port}`);
   console.log(`[ANALYZER API] Environment: ${config.server.env}`);
   console.log(`[ANALYZER API] Endpoints: http://localhost:${config.server.port}/api/analytics`);

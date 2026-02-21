@@ -9,5 +9,7 @@ router.get('/detections', analyticsController.getDetections);
 router.get('/logs', analyticsController.getLogs);
 router.get('/timeline', analyticsController.getTimeline);
 router.get('/report', analyticsController.getReport);
+router.get('/countries', analyticsController.getCountries);
+router.get('/geo-map', analyticsController.getGeoMap);
 
 module.exports = router;

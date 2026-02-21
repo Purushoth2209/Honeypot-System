@@ -1,6 +1,6 @@
 import { 
   SummaryData, AttackType, Attacker, Detection, 
-  LogsResponse, TimelineData, FullReport 
+  LogsResponse, TimelineData, FullReport, CountryData, GeoMapData 
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api/analytics';
@@ -46,5 +46,13 @@ export const apiService = {
   getHealth: async (): Promise<{ status: string; service: string }> => {
     const response = await fetch('http://localhost:4000/health');
     return response.json();
+  },
+  
+  getCountries: async (): Promise<CountryData[]> => {
+    return fetchAPI<CountryData[]>('/countries');
+  },
+  
+  getGeoMap: async (): Promise<GeoMapData[]> => {
+    return fetchAPI<GeoMapData[]>('/geo-map');
   }
 };

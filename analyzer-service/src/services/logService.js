@@ -1,4 +1,5 @@
 const fs = require('fs');
+const geoIpService = require('./geoIpService');
 
 class LogService {
   /**
@@ -12,7 +13,7 @@ class LogService {
     const content = fs.readFileSync(logFilePath, 'utf-8');
     const lines = content.trim().split('\n').filter(line => line.trim());
     
-    return lines.map((line, index) => {
+    const logs = lines.map((line, index) => {
       try {
         return JSON.parse(line);
       } catch (err) {
@@ -20,6 +21,22 @@ class LogService {
         return null;
       }
     }).filter(entry => entry !== null);
+
+    // Enrich logs with geographic data
+    return this.enrichWithGeoData(logs);
+  }
+
+  /**
+   * Enrich logs with geographic data
+   */
+  enrichWithGeoData(logs) {
+    return logs.map(log => {
+      if (log.ip) {
+        const geoData = geoIpService.getLocation(log.ip);
+        return { ...log, geo: geoData };
+      }
+      return log;
+    });
   }
 
   /**

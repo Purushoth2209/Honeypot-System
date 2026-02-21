@@ -14,6 +14,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
     { id: ViewMode.DETECTIONS, label: 'Detections', icon: Icons.Shield },
     { id: ViewMode.ATTACKERS, label: 'Top Attackers', icon: Icons.Users },
     { id: ViewMode.LOGS, label: 'Raw Logs', icon: Icons.Logs },
+    { id: ViewMode.GEO_THREAT, label: 'Geo Intelligence', icon: Icons.Globe },
     { id: ViewMode.AI_ANALYST, label: 'AI Analyst', icon: Icons.Brain },
   ];
 

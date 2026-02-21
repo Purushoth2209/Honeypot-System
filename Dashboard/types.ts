@@ -79,5 +79,20 @@ export enum ViewMode {
   LOGS = 'LOGS',
   ATTACKERS = 'ATTACKERS',
   DETECTIONS = 'DETECTIONS',
-  AI_ANALYST = 'AI_ANALYST'
+  AI_ANALYST = 'AI_ANALYST',
+  GEO_THREAT = 'GEO_THREAT'
+}
+
+export interface CountryData {
+  country: string;
+  code?: string;
+  count: number;
+}
+
+export interface GeoMapData {
+  country: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  count: number;
 }

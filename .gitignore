@@ -98,6 +98,11 @@ coverage/
 config/secrets.json
 credentials.json
 
+# GeoIP Database
+*.mmdb
+GeoLite2-*/
+GeoLite2-*.tar.gz
+
 # Project specific
 honey-pot/logs/*.json
 analyzer-service/reports/*.json
